@@ -1,0 +1,31 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    container_name: demo_sc_postgres
+    environment:
+      POSTGRES_DB: demo_sc
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - demo_sc_pgdata:/var/lib/postgresql/data
+      - ../sql:/docker-entrypoint-initdb.d
+
+  lucee:
+    image: lucee/lucee:6.0-nginx
+    container_name: demo_sc_lucee
+    ports:
+      - "8888:8888"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      AI_MOCK_MODE: ${AI_MOCK_MODE:-true}
+    volumes:
+      - ../src:/var/www
+    depends_on:
+      - postgres
+
+volumes:
+  demo_sc_pgdata:
