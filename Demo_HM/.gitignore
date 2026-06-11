@@ -1,0 +1,23 @@
+# Local credentials
+key.txt
+keys.txt
+**/key.txt
+**/keys.txt
+.env
+.env.*
+!.env.example
+
+# Python/runtime output
+**/__pycache__/
+*.py[cod]
+
+# Generated media and local artifacts
+src/uploads/generated/
+src/uploads/temp/
+*.log
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
