@@ -47,7 +47,7 @@ The web application uses Lucee CFML and JavaScript with PostgreSQL as the struct
 
 - `RagService` builds a query profile and scores memory chunks using titles, summaries, transcripts, keywords, location, date, and emotional metadata.
 - `AgentService` orchestrates retrieval, grounding, persona style, safety review, audit logging, voice output, and avatar state.
-- MiniMax provides the cloned elder Mandarin voice through a local Python/Flask bridge.
+- MiniMax provides the cloned elder Mandarin voice through a local Python/FastAPI bridge.
 - MetaPerson produces the GLB avatar, which is rendered with Three.js and GLTFLoader.
 - Optional browser-side motion detection lets a wave trigger a subtle avatar reaction. Camera frames never leave the device.
 - Dedicated Judge Mode, Retrieval Explorer, and Pipeline views explain the product and evidence flow.
@@ -105,7 +105,7 @@ We also learned that evidence should be designed as part of the user experience,
 - JavaScript
 - Three.js
 - PostgreSQL
-- Python / Flask
+- Python / FastAPI
 - MiniMax
 - MetaPerson Avatar SDK
 - HTML / CSS

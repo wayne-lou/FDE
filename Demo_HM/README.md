@@ -48,7 +48,7 @@ flowchart LR
     RAG --> DB[("PostgreSQL<br/>Personas, Memories, Chunks")]
     AG --> SAFE["Grounding + Safety Review"]
     SAFE --> RESP["Persona-Styled Response"]
-    RESP --> VOICE["MiniMax Voice Bridge<br/>Python / Flask"]
+    RESP --> VOICE["MiniMax Voice Bridge<br/>Python / FastAPI"]
     RESP --> AVATAR["Three.js + MetaPerson GLB"]
     VOICE --> UI
     AVATAR --> UI
@@ -67,7 +67,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the detailed request flow, 
 | Data | PostgreSQL |
 | Voice | MiniMax voice clone, browser TTS fallback |
 | Avatar | MetaPerson Avatar SDK, GLB, Three.js |
-| Voice bridge | Python 3 / Flask |
+| Voice bridge | Python 3 / FastAPI |
 
 ## Repository Structure
 
