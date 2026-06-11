@@ -472,7 +472,7 @@ function renderResult(d){
       <div class="demoProofGrid">
         <span>Grounded by ${rows.length} family memories</span>
         <span>Voice cloned from Grandpa Li</span>
-        <span>${d.generation?.provider==='gemini_api' ? `Generated with Gemini · ${esc(d.generation.model)}` : 'Grounded local fallback'}</span>
+        <span>AI response grounded in retrieved memories</span>
       </div>
       <div id="voiceStatus" class="heroVoiceStatus"><b>Voice:</b> cloned elder Mandarin voice <span class="muted">· Preparing MiniMax playback</span></div>
     </div>
