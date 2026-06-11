@@ -34,7 +34,7 @@ When someone asks a question, the memory agent:
 2. retrieves relevant family-memory chunks,
 3. scores and selects evidence,
 4. performs grounding and safety checks,
-5. composes a response in the persona's speaking style,
+5. sends the selected evidence to Google Gemini to compose a concise response in the persona's speaking style,
 6. generates cloned speech,
 7. animates the digital human,
 8. displays the memories used in the answer.
@@ -47,12 +47,13 @@ The web application uses Lucee CFML and JavaScript with PostgreSQL as the struct
 
 - `RagService` builds a query profile and scores memory chunks using titles, summaries, transcripts, keywords, location, date, and emotional metadata.
 - `AgentService` orchestrates retrieval, grounding, persona style, safety review, audit logging, voice output, and avatar state.
+- Google Gemini generates the final natural-language answer from the retrieved family memories. The prompt explicitly prohibits unsupported family facts, and a local grounded fallback keeps the demo available if the API is unreachable.
 - MiniMax provides the cloned elder Mandarin voice through a local Python/FastAPI bridge.
 - MetaPerson produces the GLB avatar, which is rendered with Three.js and GLTFLoader.
 - Optional browser-side motion detection lets a wave trigger a subtle avatar reaction. Camera frames never leave the device.
 - Dedicated Judge Mode, Retrieval Explorer, and Pipeline views explain the product and evidence flow.
 
-The prototype currently runs on a Lucee/PostgreSQL deployment. Its production Google Cloud path uses Cloud Run for the web and voice services, Cloud SQL for PostgreSQL, Cloud Storage for consented media, Secret Manager for provider credentials, and Vertex AI embeddings for larger memory archives.
+The prototype currently uses the Google Gemini API for evidence-grounded response generation on a Lucee/PostgreSQL deployment. Its production Google Cloud path uses Cloud Run for the web and voice services, Cloud SQL for PostgreSQL, Cloud Storage for consented media, Secret Manager for provider credentials, and Vertex AI embeddings for larger memory archives.
 
 ## Challenges
 
@@ -75,6 +76,7 @@ A family digital human raises consent, privacy, impersonation, and emotional-saf
 ## Accomplishments
 
 - Built an end-to-end memory-grounded digital-human conversation.
+- Integrated Google Gemini for evidence-constrained persona response generation.
 - Connected family memories to visible response evidence.
 - Integrated a cloned Mandarin elder voice.
 - Rendered a full-body MetaPerson GLB avatar with Three.js.
@@ -102,6 +104,8 @@ We also learned that evidence should be designed as part of the user experience,
 ## Built With
 
 - Lucee CFML
+- Google Gemini API
+- Google AI Studio
 - JavaScript
 - Three.js
 - PostgreSQL

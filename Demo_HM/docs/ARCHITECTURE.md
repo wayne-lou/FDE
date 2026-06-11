@@ -19,7 +19,8 @@ flowchart TB
         AGENT["AgentService"]
         RAG["RagService"]
         SAFETY["Grounding + Safety Review"]
-        PERSONA["Persona Style Composer"]
+        GEMINI["GeminiService"]
+        PERSONA["Grounded Response + Fallback"]
         AUDIT["Conversation + Audit Logging"]
     end
 
@@ -44,7 +45,8 @@ flowchart TB
     RAG --> CHUNKS
     AGENT --> PEOPLE
     AGENT --> SAFETY
-    SAFETY --> PERSONA
+    SAFETY --> GEMINI
+    GEMINI --> PERSONA
     PERSONA --> AUDIT
     AUDIT --> CONV
     PERSONA --> BRIDGE
@@ -65,6 +67,7 @@ sequenceDiagram
     participant A as AgentService
     participant R as RagService
     participant DB as PostgreSQL
+    participant G as Google Gemini API
     participant V as Voice Bridge
     participant H as 3D Avatar
 
@@ -75,7 +78,9 @@ sequenceDiagram
     DB-->>R: Candidate evidence
     R-->>A: Ranked evidence + match reasons
     A->>A: Grounding and safety review
-    A->>A: Compose persona-styled response
+    A->>G: Question + persona style + retrieved evidence
+    G-->>A: Grounded persona-styled response
+    Note over A,G: Local grounded fallback if Gemini is unavailable
     A->>DB: Store conversation, retrievals, steps, audit
     A-->>UI: Answer + evidence + voice/avatar metadata
     UI->>V: Generate cloned speech
@@ -121,15 +126,22 @@ erDiagram
 - Returns evidence excerpts, match reasons, and grounding strength.
 - Refuses to invent memories when evidence is absent or weak.
 
+### Google Gemini
+
+- Receives only the current question, persona speaking style, and retrieved memory evidence.
+- Generates the concise natural-language response used for voice playback.
+- Is instructed not to add unsupported family facts.
+- Returns to a deterministic local grounded response if the API is unavailable.
+
 ### Voice and Avatar
 
 - The Python bridge isolates MiniMax provider calls from the browser.
 - MetaPerson creates exportable GLB avatars.
 - Three.js renders the avatar and applies subtle visual states without skeletal retargeting.
 
-## Google Cloud Production Topology
+## Google Cloud Integration and Production Topology
 
-The current prototype is portable to the following Google Cloud architecture:
+The current prototype calls the Google Gemini API for grounded response generation. It is portable to the following broader Google Cloud architecture:
 
 ```mermaid
 flowchart LR
@@ -138,7 +150,8 @@ flowchart LR
     WEB --> SQL[("Cloud SQL for PostgreSQL")]
     WEB --> STORAGE["Cloud Storage<br/>Consented Media"]
     WEB --> VOICE["Cloud Run<br/>Python Voice Bridge"]
-    WEB --> VERTEX["Vertex AI<br/>Embeddings / Agent Upgrade"]
+    WEB --> GEMINI["Gemini API<br/>Grounded Responses"]
+    WEB --> VERTEX["Vertex AI<br/>Embeddings Upgrade"]
     WEB --> SECRET["Secret Manager"]
     WEB --> LOG["Cloud Logging + Audit"]
 ```

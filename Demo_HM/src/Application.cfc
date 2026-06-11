@@ -28,6 +28,8 @@ component {
 
     application.metapersonClientId = env("METAPERSON_CLIENT_ID");
     application.metapersonClientSecret = env("METAPERSON_CLIENT_SECRET");
+    application.geminiApiKey = env("GEMINI_API_KEY");
+    application.geminiModel = env("GEMINI_MODEL", "gemini-2.5-flash");
 
     return true;
   }

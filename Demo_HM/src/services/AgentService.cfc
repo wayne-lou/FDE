@@ -18,6 +18,23 @@ component output="false" {
     var grounding = calculateGrounding(evidence);
     var safety = safetyReview(profile, p, evidence);
     var answer = composeGroundedResponse(p, arguments.goal, profile, evidence, grounding, safety);
+    var generation = {
+      provider:"local_fallback",
+      model:"",
+      grounded:true,
+      fallback_used:true
+    };
+    if(arrayLen(evidence) && profile.intent != "safety_review"){
+      var gemini = new demo_hm.services.GeminiService();
+      var geminiResult = gemini.generate(p, arguments.goal, profile, evidence);
+      generation.model = geminiResult.model ?: "";
+      generation.error = geminiResult.error ?: "";
+      if(geminiResult.success){
+        answer = geminiResult.text;
+        generation.provider = geminiResult.provider;
+        generation.fallback_used = false;
+      }
+    }
     var convId = ensureConversation(arguments.persona_id, arguments.user_id, profile.intent);
 
     cfquery(name="insMsg1", datasource="demo_hm") { writeOutput("INSERT INTO hm_messages(conversation_id,sender_type,message_text) VALUES(" & convId & ",'user'," & sqlString(arguments.goal) & ")"); }
@@ -29,7 +46,7 @@ component output="false" {
     }
     taskId = taskQ.agent_task_id[1];
 
-    var steps = buildSteps(profile, evidence, p, grounding, safety, answer);
+    var steps = buildSteps(profile, evidence, p, grounding, safety, generation, answer);
     for(var i=1; i<=arrayLen(steps); i++){
       cfquery(name="stepIns", datasource="demo_hm") {
         writeOutput("INSERT INTO hm_agent_steps(agent_task_id,step_order,step_type,step_title,step_detail) VALUES(" & taskId & "," & i & "," & sqlString(steps[i].type) & "," & sqlString(steps[i].title) & "," & sqlString(steps[i].detail) & ")");
@@ -55,6 +72,7 @@ component output="false" {
       evidence:evidence,
       grounding:grounding,
       safety:safety,
+      generation:generation,
       steps:steps,
       voice:{provider:p.voice_provider?:"browser_tts",clone_status:p.voice_clone_status?:"not_trained",label:p.voice_label?:"Browser voice",pitch:p.pitch?:"medium",rate:p.speaking_rate?:"normal",sample:p.sample_audio_url?:"",sample_path:p.sample_audio_path?:"",provider_voice_id:p.provider_voice_id?:"",gender:p.gender?:"unknown",voice_endpoint:"api/voice.cfm",mode:voiceMode(p)},
       avatar:{mode:p.avatar_mode?:"hologram_3d",color:p.avatar_color?:"##43f4ff",image_url:resolveAvatarImage(p),model_url:p.model_url?:"",provider_avatar_id:p.provider_avatar_id?:"",motion:p.motion_profile?:"calm",expression:avatarExpression(profile,grounding,safety),gender:p.gender?:"unknown"}
@@ -102,11 +120,12 @@ component output="false" {
     return phrase & "根据保存的记忆，我找到的主要依据是：" & detail & (len(extra)?" 还有：" & extra:"") & " 如果你继续问具体地点、人物、时间，我会继续只按保存证据回答。";
   }
 
-  private array function buildSteps(required struct profile, required array evidence, required struct p, required struct grounding, required struct safety, required string answer){
+  private array function buildSteps(required struct profile, required array evidence, required struct p, required struct grounding, required struct safety, required struct generation, required string answer){
     return [
       {type:"intent", title:"Intent detection", detail:"Question classified as " & profile.intent & "; focus=" & profile.focus & "; terms=" & arrayToList(profile.terms, ', ')},
       {type:"rag", title:"Memory RAG retrieval", detail:"Searched memory chunks from chats/audio/photo notes/diaries. Evidence count=" & arrayLen(evidence) & "; top grounding=" & grounding.label},
       {type:"evidence", title:"Evidence grounding", detail:arrayLen(evidence)?("Top memory: " & evidence[1].memory_title & "; reasons=" & arrayToList(evidence[1].match_reasons, ', ')):"No sufficient evidence; response will refuse to invent."},
+      {type:"generation", title:"Gemini grounded response", detail:generation.provider=="gemini_api" ? ("Generated with Google Gemini API model " & generation.model & " using only retrieved family-memory evidence.") : ("Gemini unavailable or not configured; used deterministic local grounded fallback. " & left(generation.error?:"",220))},
       {type:"persona", title:"Persona style composition", detail:"Applied speaking style: " & left(p.speaking_style?:'',220) & "; catchphrases=" & (p.catchphrases?:'')},
       {type:"safety", title:"Consent and anti-fabrication check", detail:"Risk=" & safety.risk_level & "; " & safety.policy},
       {type:"voice", title:"Voice clone adapter", detail:"Voice provider=" & (p.voice_provider?:'browser_tts') & "; clone status=" & (p.voice_clone_status?:'not_trained') & "; provider adapter uses MiniMax/ElevenLabs through /api/voice.cfm; fallback is gender-safe browser TTS."},

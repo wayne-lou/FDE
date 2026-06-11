@@ -1,4 +1,5 @@
 # Local credentials
+/Application.cfc
 key.txt
 keys.txt
 **/key.txt

@@ -20,6 +20,7 @@ The project explores a respectful alternative to generic memorial chatbots: a fa
 ## Key Features
 
 - **Memory-grounded agent:** retrieves relevant chunks from family stories, photo notes, diaries, chats, and recordings.
+- **Gemini response generation:** Google Gemini turns retrieved evidence into a concise persona-styled answer while being instructed not to invent unsupported family history.
 - **Visible evidence:** shows which memories were selected and how they contributed to the response.
 - **Digital persona:** combines identity, speaking style, family relationship, and remembered expressions.
 - **Cloned voice:** uses MiniMax voice cloning with a browser TTS fallback.
@@ -33,10 +34,10 @@ The project explores a respectful alternative to generic memorial chatbots: a fa
 1. A family member asks Grandpa Li about an Ocean Park trip.
 2. The agent classifies the intent and searches the family memory archive.
 3. Relevant memory chunks are scored and selected as evidence.
-4. The response is composed in Grandpa Li's warm, concise speaking style.
+4. Gemini composes a concise response using only the retrieved evidence and Grandpa Li's speaking style.
 5. Safety and grounding checks reduce unsupported claims.
 6. MiniMax generates the cloned voice while the 3D avatar reacts.
-7. The UI displays the answer and the memories used.
+7. The UI displays the answer, Gemini generation label, and memories used.
 
 ## Architecture
 
@@ -47,7 +48,8 @@ flowchart LR
     AG --> RAG["RAG Retrieval + Evidence Scoring"]
     RAG --> DB[("PostgreSQL<br/>Personas, Memories, Chunks")]
     AG --> SAFE["Grounding + Safety Review"]
-    SAFE --> RESP["Persona-Styled Response"]
+    SAFE --> GEMINI["Google Gemini API<br/>Grounded Response Generation"]
+    GEMINI --> RESP["Persona-Styled Response"]
     RESP --> VOICE["MiniMax Voice Bridge<br/>Python / FastAPI"]
     RESP --> AVATAR["Three.js + MetaPerson GLB"]
     VOICE --> UI
@@ -64,6 +66,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the detailed request flow, 
 | Web application | Lucee CFML |
 | Agent orchestration | CFML `AgentService` |
 | Retrieval | Local lexical/semantic scoring in `RagService` |
+| Grounded generation | Google Gemini API |
 | Data | PostgreSQL |
 | Voice | MiniMax voice clone, browser TTS fallback |
 | Avatar | MetaPerson Avatar SDK, GLB, Three.js |
@@ -111,6 +114,7 @@ Copy the values described in `.env.example` into the server environment. Never c
 
 Required for provider integrations:
 
+- `GEMINI_API_KEY`
 - `MINIMAX_API_KEY`
 - `METAPERSON_CLIENT_ID`
 - `METAPERSON_CLIENT_SECRET`
@@ -120,6 +124,7 @@ Optional:
 - `MINIMAX_REGION`
 - `MINIMAX_API_HOST`
 - `MINIMAX_GROUP_ID`
+- `GEMINI_MODEL` (defaults to `gemini-2.5-flash`)
 - `HM_PUBLIC_BASE_URL`
 - `HM_VOICE_BRIDGE_URL`
 
@@ -151,9 +156,11 @@ HoloMemory is designed as a memory companion, not a tool for deceptive impersona
 - Avatar gesture reaction is a lightweight visual effect, not motion capture.
 - Production deployment requires stronger authentication, consent workflows, encryption, and tenant isolation.
 
-## Google Cloud Deployment Path
+## Google Cloud Integration
 
-The current hackathon prototype runs on Lucee, PostgreSQL, and a local Python voice bridge. A production Google Cloud deployment can package the web app and voice bridge for Cloud Run, move PostgreSQL to Cloud SQL, store consented media in Cloud Storage, manage credentials with Secret Manager, and replace or augment local scoring with Vertex AI embeddings.
+The running prototype uses the Google Gemini API for grounded response generation after local family-memory retrieval. Gemini receives the question, persona style, and selected evidence only; if the API is unavailable, the agent falls back to a deterministic local grounded response.
+
+A production Google Cloud deployment can additionally package the web app and voice bridge for Cloud Run, move PostgreSQL to Cloud SQL, store consented media in Cloud Storage, manage credentials with Secret Manager, and replace or augment local scoring with Vertex AI embeddings.
 
 ## Documentation
 
