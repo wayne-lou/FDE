@@ -445,6 +445,74 @@ body:has(.homeDemo) .side{
   line-height:1.18;
   font-weight:850;
 }
+.groundedAiFlow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin:-4px 0 16px;
+  padding:9px 12px;
+  border:1px solid rgba(66,217,255,.22);
+  border-radius:8px;
+  background:rgba(4,14,25,.58);
+  color:#b9d7ff;
+  font-size:12px;
+}
+.groundedAiFlow b{
+  color:#dffcff;
+  font-size:12px;
+  font-weight:700;
+  text-transform:none;
+}
+.groundedAiFlow i{color:#5d85a8;font-style:normal;}
+.geminiFlowStep{display:inline-flex;align-items:center;gap:7px;color:#72ffb0!important;}
+.googleSpark{
+  position:relative;
+  width:15px;
+  height:15px;
+  flex:0 0 15px;
+  border-radius:50%;
+  background:conic-gradient(from 20deg,#4285f4 0 25%,#34a853 0 50%,#fbbc05 0 75%,#ea4335 0);
+  box-shadow:0 0 15px rgba(66,133,244,.34);
+}
+.googleSpark::after{
+  content:"";
+  position:absolute;
+  inset:4px;
+  border-radius:50%;
+  background:#071522;
+}
+.geminiGroundingBadge{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:14px 0 4px;
+  padding:10px 12px;
+  border:1px solid rgba(114,255,176,.34);
+  border-radius:8px;
+  background:linear-gradient(90deg,rgba(52,168,83,.10),rgba(66,133,244,.09));
+  color:#dffcff;
+  font-size:12.5px;
+  line-height:1.35;
+}
+.askGrandpaCard .geminiGroundingBadge span{
+  color:inherit;
+  font-size:inherit;
+  font-weight:400;
+  text-transform:none;
+}
+.geminiGroundingBadge b{color:#72ffb0;}
+.geminiGroundingBadge small{
+  display:block;
+  margin-top:2px;
+  color:#9db9dc;
+  font-size:11px;
+}
+.responseGeminiBadge{margin:10px 0;}
+@media(max-width:760px){
+  .groundedAiFlow{gap:6px;font-size:10px;}
+  .groundedAiFlow b{font-size:10px;}
+}
 .tryDemoBtn{
   width:100%;
   min-height:58px;

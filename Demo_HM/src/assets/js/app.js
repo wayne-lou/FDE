@@ -469,10 +469,14 @@ function renderResult(d){
       <div class="responseKicker">Digital human response</div>
       <h3 class="response-title">${esc(personaName)}</h3>
       <p class="response-content">"${esc(shortGrandpaAnswer(d.answer))}"</p>
+      <div class="geminiGroundingBadge responseGeminiBadge">
+        <span class="googleSpark" aria-hidden="true"></span>
+        <span><b>Grounded generation by Google Gemini</b><small>Answer composed from retrieved family memories</small></span>
+      </div>
       <div class="demoProofGrid">
         <span>Grounded by ${rows.length} family memories</span>
         <span>Voice cloned from Grandpa Li</span>
-        <span>AI response grounded in retrieved memories</span>
+        <span>Evidence visible and traceable</span>
       </div>
       <div id="voiceStatus" class="heroVoiceStatus"><b>Voice:</b> cloned elder Mandarin voice <span class="muted">· Preparing MiniMax playback</span></div>
     </div>
@@ -515,6 +519,8 @@ async function runAgent(opts={}){
       await delay(1000);
     }
     renderResult(data);
+    if(demoBtn){ demoBtn.disabled=false; demoBtn.textContent='Try Grandpa Demo'; }
+    if(judgeBtn){ judgeBtn.disabled=false; judgeBtn.textContent='Judge Mode'; }
     await speakWithClone(data.answer, data.voice, data.avatar, data.persona);
   }catch(e){
     setAvatarState('error','uncertain','#ff5c8a');

@@ -33,6 +33,13 @@
           <div class="askGrandpaCard">
             <span>Ask Grandpa</span>
             <blockquote>"Do you remember our Ocean Park family trip?"</blockquote>
+            <div class="groundedAiFlow" aria-label="Memory retrieval, Google Gemini generation, and cloned voice">
+              <b>Memory retrieval</b>
+              <i aria-hidden="true">→</i>
+              <b class="geminiFlowStep"><span class="googleSpark" aria-hidden="true"></span>Google Gemini</b>
+              <i aria-hidden="true">→</i>
+              <b>Cloned voice</b>
+            </div>
             <div class="demoButtonRow">
               <button class="btn tryDemoBtn" id="tryGrandpaBtn" onclick="tryGrandpaDemo()">Try Grandpa Demo</button>
               <button class="btn judgeModeBtn" id="judgeModeBtn" onclick="runJudgeMode()">Judge Mode</button>
@@ -47,6 +54,10 @@
             <div class="emptyResult">
               <h3>Grandpa Li is ready.</h3>
               <p>Run the demo to hear a memory-grounded answer with retrieved family evidence.</p>
+              <div class="geminiGroundingBadge">
+                <span class="googleSpark" aria-hidden="true"></span>
+                <span><b>Google Gemini</b> composes the answer from retrieved memories</span>
+              </div>
               <div class="placeholderEvidence">
                 <span>Memory Evidence Found</span>
                 <b>Ocean Park Family Trip</b>
