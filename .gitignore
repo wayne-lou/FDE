@@ -1,0 +1,4 @@
+output/*.pptx
+output/*.json
+logs/*.log
+renderer/node_modules/
