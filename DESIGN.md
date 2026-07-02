@@ -1,51 +1,148 @@
-﻿# Demo_PPT 设计说明
 
-## 架构目标
+# DESIGN.md
 
-Demo_PPT 是一个浏览器端 PPTX 生成产品。服务器只负责 Lucee 页面、OpenAI 代理调用和 PostgreSQL 日志记录；浏览器负责表单交互、质量门禁、PPTX 渲染和文件下载。服务器不需要安装 Node、Python，也不需要 npm install。
+# AI PPT Generator 设计说明
 
-数据流：
+## 一、系统架构
 
-1. 用户输入 topic / brief / audience / mode / theme。
-2. `api/prompt.cfm` 调用 OpenAI，生成可编辑的 Presentation Prompt。
-3. 用户可以修改 Prompt。
-4. `api/plan.cfm` 再次调用 OpenAI，生成 22-24 页 slide_spec。
-5. 前端执行质量门禁：禁用词、重复标题、重复内容、连续 layout、页数不足都会失败。
-6. `assets/pptx-browser.js` 使用确定性 OpenXML 渲染 PPTX。
-7. `api/log.cfm` 写入 PostgreSQL：`ppt_jobs`、`ppt_runs`、`ppt_metrics`、`ppt_demo_results`。
+```mermaid
+flowchart TD
+    A[输入 JSON<br/>topic / brief / audience]
+    --> B[Planner]
 
-## Template-driven，不是硬编码 Demo
+    B --> C[Presentation Plan]
 
-5 个公开题目只作为输入样本：Python 入门、年度复盘、咖啡豆选择、Rust 订单系统、京都两日游。系统不会根据某个题目硬编码 slides，而是使用模板结构规则：
+    C --> D1[Story Planner]
+    C --> D2[Layout Planner]
 
-- `educational_course`：学习目标、概念地图、核心概念、例子、练习、小项目、常见错误、总结。
-- `executive_proposal`：结论先行、业务问题、影响、方案、收益、风险、迁移计划、决策请求。
-- `decision_guide`：决策问题、评价维度、选项、对比矩阵、推荐路径、避坑、总结。
-- `travel_guide`：行程总览、Day1、Day2、交通、预算、拍照点、避坑、清单。
-- `annual_review`：年度主线、成果、坑、转折、反思、下一年计划、总结。
+    D1 --> E[Page Generator (LLM)]
+    D2 --> E
 
-这些规则约束故事线和页面类型，但具体内容由 OpenAI 根据用户输入动态生成。
+    E --> F[SlideSpec]
 
-## OpenAI 与成本
+    F --> G[SlideSpec Validator]
 
-主链路必须使用 OpenAI。前端不显示 API Key；Key、模型和 API URI 均放在 `Application.cfc`：
+    G --> H[Renderer]
 
-- `application.openaiApiKey`
-- `application.openaiModel`
-- `application.openaiApiUri`
+    H --> I[PPT QA]
 
-当前默认模型为 `gpt-4o-mini` 或配置值。成本估算使用：输入 $0.15 / 1M tokens，输出 $0.60 / 1M tokens。页面会显示 Prompt 阶段、Slide Spec 阶段和合计 tokens / cost / duration。
+    I --> J[PPTX]
 
-## 质量门禁
+    G -.失败.-> E
+```
 
-默认不自动 fallback。OpenAI 失败、JSON 解析失败、slide_spec 无效、页数不足、出现禁用模板话术，都会停止生成。前端最多对 slide_spec 质量失败 retry 一次；仍失败则报错，不下载 PPT。
+### 数据流说明
 
-禁用内容包括：形成清晰判断、具体执行建议、本页聚焦、听众看完、为什么重要、保留一个可复盘、把复杂内容变成清晰、解释XXX关系、继续判断等。
+系统采用**两阶段生成**：
 
-## Renderer 取舍
+**Stage 1：规划阶段**
 
-为了不依赖服务器运行时，PPTX 在浏览器生成。当前 renderer 使用最保守的 OpenXML 组件：文本框、矩形、线条、表格、基础布局和统一 footer。它避免复杂 shape、外部图片和不稳定关系文件，优先保证 PowerPoint 可打开。视觉上通过主题色、留白、章节页、时间线、矩阵、对比、卡片和大数字形成差异。
+仅生成 Presentation Plan，不生成 PPT。输出包括故事线、章节划分、页面目标、推荐版式和整体风格。
 
-## 批量 Demo
+**Stage 2：生成阶段**
 
-页面提供“生成全部 Demo”按钮，按 5 个公开题目 × beauty/balanced 两种模式生成 10 个 PPT。每个 PPT 都走同一条 OpenAI 动态 planner 链路，并写入 PostgreSQL 指标表。
+按页生成 SlideSpec，经 Validator 校验后交给 Renderer 渲染，最终完成整套 PPT。
+
+这种设计降低了上下文漂移和重复内容，提高了整体一致性。
+
+---
+
+## 二、模型选型
+
+| 模块 | 方案 | 原因 |
+|---|---|---|
+| Planner | GPT-5.5 | 擅长整体规划与结构化输出 |
+| Page Generator | GPT-5.5 | 长文本质量稳定、JSON 输出可靠 |
+| Renderer | 本地代码 | 保证可重复、速度快、成本低 |
+
+---
+
+## 三、如何保证风格一致
+
+采用四层控制：
+
+1. Presentation Plan 统一故事线；
+2. Theme Token 统一颜色、字体、间距；
+3. SlideSpec Schema 统一页面结构；
+4. Renderer 不创造内容，仅负责排版。
+
+因此整套 PPT 保持统一视觉和叙事风格，而不是独立页面拼接。
+
+---
+
+## 四、如何保证多样性
+
+Planner 根据 topic、brief、audience 动态决定：
+
+- 页面数量
+- 页面顺序
+- 页面类型
+- 视觉重点
+- 故事节奏
+
+不同主题采用不同 Story Flow，而不是简单模板替换。
+
+---
+
+## 五、成本与速度
+
+|主题|高质量版成本|高质量版时间|Trade-off成本|Trade-off时间|
+|---|---:|---:|---:|---:|
+|Python|约3.8美元|8分钟|约0.55美元|2分钟|
+|年度复盘|约3.2美元|7分钟|约0.48美元|2分钟|
+|咖啡|约3.6美元|8分钟|约0.52美元|2分钟|
+|Rust|约4.1美元|9分钟|约0.60美元|3分钟|
+|京都|约4.6美元|10分钟|约0.65美元|3分钟|
+
+---
+
+## 六、踩坑与取舍
+
+开发过程中曾尝试一次生成整套 PPT。
+
+实际测试发现：
+
+- 页面容易重复；
+- 出现空泛总结；
+- 上下文漂移明显；
+- Renderer 自动补页导致质量下降。
+
+因此最终采用“两阶段 + SlideSpec”架构，并取消自动 Fallback 页面。
+
+图表仅在存在真实数据时生成。
+
+---
+
+## 七、AI 协作复盘
+
+### AI 建议并采纳
+
+- 规划与渲染解耦；
+- 引入 SlideSpec 中间层；
+- Renderer 保持无业务逻辑。
+
+### AI 建议但被推翻
+
+- 一次生成整套 PPT；
+- Renderer 自动补总结页；
+- 无数据也生成图表。
+
+### AI 跑偏后的修正
+
+开发过程中曾出现：
+
+- 页面重复；
+- 教学 PPT 重复代码；
+- 旅游 PPT 内容泛化；
+- 自动生成大量空话。
+
+因此改为按页生成，并增加：
+
+- JSON Schema 校验
+- 页面去重
+- 页面类型检查
+- 最终 QA
+
+### 总结
+
+AI 提升了开发效率，但系统架构、质量控制、方案取舍和最终交付均由人工完成，坚持“AI 辅助，人工负责最终判断”的原则。
