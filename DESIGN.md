@@ -1,4 +1,3 @@
-
 # DESIGN.md
 
 # AI PPT Generator 设计说明
